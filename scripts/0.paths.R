@@ -1,10 +1,7 @@
 # For specifying paths
 
-# Natalie's path
-# path_to_box <- "C:/Users/Natalie Gradwohl/Box/"
-
 # Juliet's path
-# path_to_box <- 
+# path_to_box <- "~/Library/CloudStorage/Box-Box/"
 
 # # Joey's path
 # path_to_box <- "C:/Users/Joseph Fong/Box/"
