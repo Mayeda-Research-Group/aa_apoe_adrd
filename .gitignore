@@ -1,0 +1,15 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+
+# folders
+data/
+output/
+code_review/
+scripts/OLD
+scripts/exploratory_analyses
+
+
+# files
