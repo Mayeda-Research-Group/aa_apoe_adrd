@@ -20,15 +20,15 @@ source(here::here("scripts", "0.paths.R"))
 
 #---- Load the data ----
 load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/aa_apoe_tte.RData"))
+            "analysis_data/aa_apoe_tte_e4all.RData"))
 # EHR baseline
 load(paste0(path_to_box, "asian_americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/ehr_bl.RData"))
+            "analysis_data/ehr_bl_e4all.RData"))
 # EHR long
 load(paste0(path_to_box, "asian_americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/bp_followup_before90.RData"))
+            "analysis_data/bp_followup_before90_e4all.RData"))
 load(paste0(path_to_box, "asian_americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/bmi_followup.RData"))
+            "analysis_data/bmi_followup_e4all.RData"))
 
 #---- pre-processing the data ----
 aa_apoe_tte_ehr <- aa_apoe_tte %>%
@@ -66,8 +66,9 @@ with(aa_apoe_tte_ehr %>% filter(max_fu_yr == 0) %>%
 # remove these subjects from analysis
 # (or not, they shouldn't contribute to tte analysis anyways)
 aa_apoe_tte_ehr %<>% filter(max_fu_yr != 0)
-nrow(aa_apoe_tte_ehr) # n = 45285(removed 233 subjects)
+nrow(aa_apoe_tte_ehr) # n = 46325 (removed 233 subjects)
 
+with(aa_apoe_tte_ehr, table(ethnicity_rev, useNA = "ifany"))
 #---- Long dataset ----
 tte_vars_tbl <- aa_apoe_tte_ehr %>%
   select(subjid, survey_age_r, main_dem_v1_end_age_r, 
@@ -339,23 +340,37 @@ aa_apoe_long_tte_selected <- aa_apoe_long_tte %>%
                              TRUE ~ 0),
          apoe_e2e4 = case_when(str_detect(apoe, "e4e2") ~ 1,
                                TRUE ~ 0))
-# #---- Save the data ----
-save(aa_apoe_tte_ehr,
-     file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-                   "analysis_data/aa_apoe_tte_ehr.RData"))
+
+#---- Sensitivity analysis dataset: excluding e2e4 ----
+aa_apoe_tte_selected_exclue2e4 <- aa_apoe_tte_selected %>%
+  filter(apoe_e2e4 == 0)
+aa_apoe_long_tte_selected_exclue2e4 <- aa_apoe_long_tte_selected %>%
+  filter(apoe_e2e4 == 0)
+
+#---- Save the data ----
+# save(aa_apoe_tte_ehr,
+#      file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
+#                    "analysis_data/aa_apoe_tte_ehr_e4all.RData"))
 save(aa_apoe_tte_selected,
      file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-                   "analysis_data/aa_apoe_tte_selected.RData"))
+                   "analysis_data/aa_apoe_tte_selected_e4all.RData"))
 save(aa_apoe_long_tte,
      file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-                   "analysis_data/aa_apoe_long_tte.RData"))
+                   "analysis_data/aa_apoe_long_tte_e4all.RData"))
 # save(aa_apoe_long_tte_int2,
 #      file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
 #                    "analysis_data/aa_apoe_long_tte_int2.RData"))
 save(aa_apoe_long_tte_selected,
      file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-                   "analysis_data/aa_apoe_long_tte_selected.RData"))
+                   "analysis_data/aa_apoe_long_tte_selected_e4all.RData"))
 
+# Exclude e2e4
+save(aa_apoe_tte_selected_exclue2e4,
+     file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
+                   "analysis_data/aa_apoe_tte_selected_exclue2e4.RData"))
+save(aa_apoe_long_tte_selected_exclue2e4,
+     file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
+                   "analysis_data/aa_apoe_long_tte_selected_exclue2e4.RData"))
 #---- OLD ----
 # #---- Dementia * age 90 ----
 # table(aa_apoe_tte$main_dem_v1_90flag, useNA = "ifany")

@@ -29,18 +29,18 @@ library(magrittr)
 options(scipen = 999)
 
 #---- Load the data ----
-# # Paths (local)
-# # source(here::here("scripts", "0.paths.R"))
+# Paths (local)
+# source(here::here("scripts", "0.paths.R"))
 # load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-#             "analysis_data/aa_apoe_long_tte_selected_e4all.RData"))
+#             "analysis_data/aa_apoe_long_tte_selected_exclue2e4.RData"))
 
 # Paths cluster
 project_folder <- paste0("/u/home/y/yingyanw/aa_apoe_adrd/")
-load(paste0(project_folder, "data/aa_apoe_long_tte_selected_e4all.RData"))
+load(paste0(project_folder, "data/aa_apoe_long_tte_selected_exclue2e4.RData"))
 
 #---- plr function ----
 plr_func <- function(data, b, formula, bootstrap = TRUE){
-  # data = aa_apoe_long_tte_selected
+  # data = aa_apoe_long_tte_selected_exclue2e4
   # i_boot = 1
   # b = 1
   # formula = model_formulas
@@ -233,7 +233,7 @@ for (i_boot in boot_i_start:boot_i_end) {
   # i_boot <- 0 # point estimate, using full dataset, no resampling
   # i_boot <- 1 # and so on: bootstrap
   start <- Sys.time() # record starting time
-  result <- plr_func(aa_apoe_long_tte_selected, i_boot,  
+  result <- plr_func(aa_apoe_long_tte_selected_exclue2e4, i_boot,  
                      formula = model_formulas,
                      bootstrap = i_boot != 0)
   out <- tibble(i_boot = i_boot, 

@@ -45,7 +45,7 @@ with(aa_apoe_tte, summarytools::freq(ethnicity_rev, useNA = "ifany"))
 
 #---- APOE ----
 aa_apoe_tte %<>%
-  mutate(apoe_y = case_when(str_detect(apoe, "e3e4|e4e4") ~ 1,
+  mutate(apoe_y = case_when(str_detect(apoe, "e3e4|e4e4|e4e2") ~ 1,
                             TRUE ~ 0))
 with(aa_apoe_tte, table(apoe, apoe_y, useNA = "ifany"))
 summarytools::freq(aa_apoe_tte$apoe_y)
@@ -134,44 +134,63 @@ with(aa_apoe_tte, table(main_dem_v1_end_type, main_dem_v1_sample, useNA = "ifany
 with(aa_apoe_tte, summary(main_dem_v1_end_age))
 
 #---- Filter participants ----
+# 1. Asian American and non-Latino White GERA participants with APOE genotype data 
+# who at baseline (time of survey completion) were aged 60-89 years, 
+# had at least 2 years of continuous membership, and had no dementia diagnosis 
+# in the EHR: n=47,085
+
 # n = 485 not in Main dementia definition sample and non dementia at survey
 aa_apoe_tte %>% filter(!(main_dem_v1_sample == 1)) %>% nrow()
 with(aa_apoe_tte %>% filter(!(main_dem_v1_sample == 1)), summary(main_dem_v1_dem_flag))
-  
+
 aa_apoe_tte %<>% filter(main_dem_v1_sample == 1) # n = 51194
+
 
 # n = 0 subjects not aged 60 and above
 aa_apoe_tte %<>% mutate(survey_age_r = round(survey_age))
 aa_apoe_tte %>% filter(!survey_age_r >= 60) %>% nrow()
 
-# n = 4636 not in main Asian/white group
+# Asian/white race/ethnicity n=4109 unknown race and ethnicity group and n=80 PI
 with(aa_apoe_tte, table(ethnicity_rev, main_dem_v1_end_dem_flag, useNA = "ifany"))
 with(aa_apoe_tte, table(main_dem_v1_end_dem_flag, apoe_y, ethnicity_rev, useNA = "ifany"))
 table(aa_apoe_tte$ethnicity_rev, useNA = "ifany")
-aa_apoe_tte %>% filter(!ethnicity_rev %in% c(2, 3, 5, 9)) %>% nrow()
 aa_apoe_tte %>% filter(!ethnicity_rev %in% c(2, 3, 5, 9)) %>%
   with(table(ethnicity_rev, useNA = "ifany"))
-aa_apoe_tte %>% filter(ethnicity_rev %in% c(2, 3, 5, 9)) %>% nrow()
-# Since South Asian does not have dementia, drop south asian (ethnicity_rev == 1)
-aa_apoe_tte %<>%
-  filter(ethnicity_rev %in% c(2, 3, 5, 9)) # n = 46558
-# filter(ethnicity_rev %in% c(1, 2, 3, 5, 9))
+
+aa_apoe_tte %<>% filter(!is.na(ethnicity_rev), ethnicity_rev != 8) # n=47,005
+
+# 2. n=46,894 
+# Exclude Asian ethnic group with <10 dementia cases among APOE-ε4 carriers 
+# during follow-up: n=527 
+
+# n = 447 not in main Asian/white group
+# Asian ethnic group with <10 dementia cases among APOE-ε4 carriers during follow-up
+aa_apoe_tte %>% filter(!ethnicity_rev %in% c(2, 3, 5, 9)) %>% nrow()
+aa_apoe_tte %>% filter(!ethnicity_rev %in% c(2, 3, 5, 9)) %>%
+  with(., table(ethnicity_rev, main_dem_v1_end_dem_flag, useNA = "ifany"))
+aa_apoe_tte %<>% filter(ethnicity_rev %in% c(2, 3, 5, 9)) # n = 46,558
+
 with(aa_apoe_tte, table(ethnicity_rev, useNA = "ifany"))
 
+# Sensitivity analysis
+# 3. Exclude APOE e2e4
 # n = 1040 with APOE e2e4 alleles
-aa_apoe_tte %<>% 
+aa_apoe_tte_exclue2e4 <- aa_apoe_tte %>% 
   mutate(apoe_e2 = case_when(str_detect(apoe, "e2") ~ 1,
                              TRUE ~ 0),
          apoe_e2e4 = case_when(str_detect(apoe, "e4e2") ~ 1,
                                TRUE ~ 0))
-with(aa_apoe_tte, table(apoe_e2e4, useNA = "ifany"))
-with(aa_apoe_tte, table(apoe_e2e4, ethnicity_rev, useNA = "ifany"))
-aa_apoe_tte %<>% filter(apoe_e2e4 == 0) # n = 45518
+with(aa_apoe_tte_exclue2e4, table(apoe_e2e4, useNA = "ifany"))
+with(aa_apoe_tte_exclue2e4, table(apoe_e2e4, ethnicity_rev, useNA = "ifany"))
+aa_apoe_tte_exclue2e4 %<>% filter(apoe_e2e4 == 0) # n = 45,518
 
 # #---- Save the data ----
 save(aa_apoe_tte,
      file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-                   "analysis_data/aa_apoe_tte.RData"))
+                   "analysis_data/aa_apoe_tte_e4all.RData"))
+save(aa_apoe_tte_exclue2e4,
+     file = paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
+                   "analysis_data/aa_apoe_tte_exclue2e4.RData"))
 
 #---- Descriptives ----
 #---- Genetic ancestry ----

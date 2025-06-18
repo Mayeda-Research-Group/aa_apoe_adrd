@@ -22,5 +22,5 @@ export OMP_NUM_THREADS=1 #uses max 1 thread (needs to match -pe shared)
 
 echo "======"
 echo SGE_TASK_ID=$SGE_TASK_ID      
-R CMD BATCH --no-save --no-restore "--args scenario_num=$SGE_TASK_ID"  /u/home/y/yingyanw/aa_apoe_adrd/scripts/3.1_plr_bootstrap_int1_cluster.R /u/home/y/yingyanw/aa_apoe_adrd/console_output/output.$JOB_ID.$SGE_TASK_ID
-echo R CMD BATCH --no-save --no-restore \'--args scenario_num=$SGE_TASK_ID \'  /u/home/y/yingyanw/aa_apoe_adrd/scripts/3.1_plr_bootstrap_int1_cluster.R /u/home/y/yingyanw/aa_apoe_adrd/console_output/output.$JOB_ID.$SGE_TASK_ID
+R CMD BATCH --no-save --no-restore "--args scenario_num=$SGE_TASK_ID"  /u/home/y/yingyanw/aa_apoe_adrd/scripts/3.1_plr_bootstrap_int1_cluster_exclue2e4.R /u/home/y/yingyanw/aa_apoe_adrd/console_output/output.$JOB_ID.$SGE_TASK_ID
+echo R CMD BATCH --no-save --no-restore \'--args scenario_num=$SGE_TASK_ID \'  /u/home/y/yingyanw/aa_apoe_adrd/scripts/3.1_plr_bootstrap_int1_cluster_exclue2e4.R /u/home/y/yingyanw/aa_apoe_adrd/console_output/output.$JOB_ID.$SGE_TASK_ID

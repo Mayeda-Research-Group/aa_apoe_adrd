@@ -19,7 +19,7 @@ source(here::here("scripts", "0.paths.R"))
 
 #----load the dataset ----
 load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/aa_apoe_tte_selected.RData"))
+            "analysis_data/aa_apoe_tte_selected_e4all.RData"))
 aa_apoe_tte_selected %<>% 
   mutate(apoe_y = factor(apoe_y, levels = c(1, 0)),
          ethnicity_rev = factor(ethnicity_rev,
@@ -42,7 +42,7 @@ aa_apoe_tte_selected %>%
   theme(plot.title = element_text(hjust = 0.5),
         legend.position = "bottom")
 
-ggsave(here::here("output", "figures", "fig_baseline_age_ethn.png"),
+ggsave(here::here("output", "figures", "fig_baseline_age_ethn_e4all.png"),
        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 #---- count of deaths after dementia ----
@@ -183,7 +183,7 @@ AJ_tib_age_adj %>%
   # scale_fill_brewer(palette = "Paired") +
   facet_grid(. ~ ethn_grp, scales = "free", space = "free")
 
-ggsave(here::here("output", "figures", "figure_age_adj_ci_dem_ethn_10yrs.png"),
+ggsave(here::here("output", "figures", "figure_age_adj_ci_dem_ethn_10yrs_e4all.png"),
        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 ##---- 10 year dementia and dementia-free death cumulative incidence table ----
@@ -197,7 +197,7 @@ AJ_age_dem_death_table <- AJ_tib_age_adj %>%
          apoe_y = factor(apoe_y, levels = c(1, 0), labels = c("Carriers", "Non-carriers")),
          state = factor(state, levels = c("Alive without dementia", "Dementia", 
                                           "Death without dementia")),
-         across(c(estimate, conf.high, conf.low), ~sprintf(., fmt = '%#.2f')),
+         across(c(estimate, conf.high, conf.low), ~sprintf(., fmt = '%#.1f')),
          pe_ci = paste0(estimate, " \n(", conf.low, ", ", conf.high, ")"),
          yr_grp = case_when(
            ethnicity == "Filipino" & apoe_y == "Carriers" & time >= 12.79 ~ 13,
@@ -214,7 +214,7 @@ AJ_age_dem_death_table <- AJ_tib_age_adj %>%
 
 write_xlsx(AJ_age_dem_death_table, 
            here::here("output", "tables",
-                      "table_age_adj_cum_inc_dem_death_581013.xlsx"))
+                      "table_age_adj_cum_inc_dem_death_581013_e4all.xlsx"))
 
 ##---- Cumulative incidence plot Dementia only ----
 AJ_tib_age_adj %>% 
@@ -241,7 +241,7 @@ AJ_tib_age_adj %>%
   theme_bw() +
   theme(legend.position = "bottom") +
   labs(x = "Follow-up time (years)",
-       y = "Cumulative incidence (%)") 
+       y = "Age-adjusted cumulative incidence (%)") 
 
 # for footnotes
 AJ_tib_age_adj %>% 
@@ -253,7 +253,7 @@ AJ_tib_age_adj %>%
   select(time, conf.high) %>%
   apply(., 2, summary)
 
-ggsave(here::here("output", "figures", "fig_cuminc_AJ_dem_ethns_withCI.png"),
+ggsave(here::here("output", "figures", "fig_cuminc_AJ_dem_ethns_withCI_e4all.png"),
        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 ##---- Cumulative incidence plot dementia-free death only ----
@@ -281,9 +281,9 @@ AJ_tib_age_adj %>%
   theme_bw() +
   theme(legend.position = "bottom") +
   labs(x = "Follow-up time (years)",
-       y = "Cumulative incidence (%)") 
+       y = "Age-adjusted cumulative incidence (%)") 
 
-ggsave(here::here("output", "figures", "fig_cuminc_AJ_death_ethns_withCI.png"),
+ggsave(here::here("output", "figures", "fig_cuminc_AJ_death_ethns_withCI_e4all.png"),
        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 #---- OLD ----

@@ -26,7 +26,7 @@ path_to_raw_data <- paste0(path_to_box,
 
 #---- Load data ----
 load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/aa_apoe_tte.RData"))
+            "analysis_data/aa_apoe_tte_e4all.RData"))
 
 # SUBJID and SURVEY_AGE
 apoe_tte_data_survey_age <- aa_apoe_tte %>% 
@@ -286,9 +286,9 @@ ht_wt_data <- read_sas(paste0(path_to_raw_data,
 colnames(ht_wt_data) <- tolower(colnames(ht_wt_data))
 # filter for subjects that are in the tte dataset 
 bmi_tib <- ht_wt_data %>% filter(subjid %in% aa_apoe_tte$subjid)
-length(unique(bmi_tib$subjid)) # n = 45229
+length(unique(bmi_tib$subjid)) # n = 46265
 
-# there are 289 subjects with no ht or wt data from EHR
+# there are 293 subjects with no ht or wt data from EHR
 # we will impute these values, with the help of self-reported BMI info
 length(unique(aa_apoe_tte$subjid))  - length(unique(bmi_tib$subjid)) 
 
@@ -303,7 +303,7 @@ bmi_tib %<>%
 with(bmi_tib %>% filter(age >= 90) %>% group_by(subjid, age) %>%
        dplyr::summarize(n = n()), table(n, useNA = "ifany"))
 # bmi_tib %>% group_by(subjid, age) %>% mutate(n = n()) %>% filter(n > 1) %>% view()
-# n = 3964
+# n = 4033
 id_bmi_90plus <- bmi_tib %>% filter(age >= 90) %>% group_by(subjid, age) %>%
   dplyr::summarize(n = n()) %>% filter(n > 1) %>% pull(subjid)
 set.seed("62283")
@@ -317,8 +317,8 @@ bmi_tib %>%
   theme_minimal() +
   theme(legend.position = "none")
 
-nrow(bmi_tib) # n = 484153
-bmi_tib %>% distinct(subjid, age) %>% nrow() # n = 472716
+nrow(bmi_tib) # n = 495379
+bmi_tib %>% distinct(subjid, age) %>% nrow() # n = 483770
 
 with(bmi_tib %>% filter(age >= 90) %>% group_by(subjid, age) %>%
        dplyr::summarize(n = n()) %>% filter(n > 1), summary(n))
@@ -347,9 +347,9 @@ bp_data <- read_sas(paste0(path_to_raw_data,
 colnames(bp_data) <- tolower(colnames(bp_data))
 # filter for subjects that are in the tte dataset 
 bp_tib <- bp_data %>% filter(subjid %in% aa_apoe_tte$subjid)
-length(unique(bp_tib$subjid)) # n = 45335
+length(unique(bp_tib$subjid)) # n = 46373
 
-# there are 183 subjects with no bp data from EHR
+# there are 185 subjects with no bp data from EHR
 length(unique(aa_apoe_tte$subjid)) - length(unique(bp_tib$subjid))
 
 # # there are "categorical" bp's in the dataset
@@ -422,13 +422,13 @@ bp_followup_before90 <- bp_median_before90 %>% filter(age_yr >= survey_age_r)
 # #---- Save the data ----
 save(ehr_tib, file =
        paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-              "analysis_data/ehr_bl.RData"))
+              "analysis_data/ehr_bl_e4all.RData"))
 save(bmi_followup, file =
        paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-              "analysis_data/bmi_followup.RData"))
+              "analysis_data/bmi_followup_e4all.RData"))
 save(bp_followup_before90, file=
        paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-              "analysis_data/bp_followup_before90.RData"))
+              "analysis_data/bp_followup_before90_e4all.RData"))
 
 #---- OLD ----
 # # Because round has a weird behavior

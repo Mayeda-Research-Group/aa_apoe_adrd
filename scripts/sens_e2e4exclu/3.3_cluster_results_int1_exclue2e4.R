@@ -24,7 +24,7 @@ for (r in race_varlabel){
     temp <- bind_rows(
       temp, readRDS(paste0(path_to_box, 
                            "Asian_Americans_dementia_data/aa_apoe_dementia/", 
-                           "model_results/hoffman2/e4all/plr_bootstrap/",
+                           "model_results/hoffman2/exclue2e4/plr_bootstrap/",
                            paste0(r, "_RD_RR_time_wide_", b, ".RDS"))))
   }
   assign(paste0(r, "_RD_RR_time_wide"), temp)
@@ -39,7 +39,7 @@ rm(temp)
 #     warnings <- bind_rows(
 #       warnings, readRDS(paste0(path_to_box,
 #                                "Asian_Americans_dementia_data/aa_apoe_dementia/",
-#                                "model_results/hoffman2/e4all/warnings/",
+#                                "model_results/hoffman2/exclue2e4/warnings/",
 #                                paste0(r, "_warning_", b, ".RDS"))))
 #   }
 # }
@@ -140,12 +140,12 @@ for (i in 1:length(race_varlabel)){
 remove(temp, temp1, temp2)
 save(RD_RR_time_CI, file = paste0(path_to_box, 
                                   "Asian_Americans_dementia_data/aa_apoe_dementia/", 
-                                  "model_results/hoffman2/e4all/RD_RR_time_CI.RData"))
+                                  "model_results/hoffman2/exclue2e4/RD_RR_time_CI.RData"))
 
 #---- Estimates ----
 load(paste0(path_to_box, 
             "Asian_Americans_dementia_data/aa_apoe_dementia/", 
-            "model_results/hoffman2/e4all/RD_RR_time_CI.RData"))
+            "model_results/hoffman2/exclue2e4/RD_RR_time_CI.RData"))
 race_labels <- c("Overall", "Chinese", "Japanese", "Filipino", "Non-Latino White", "Asian American")
 for (fy in c(10, 13, 18)){
   temp <- RD_RR_time_CI %>%
@@ -196,7 +196,7 @@ RD_RR_101318_wide <- RD_RR_101318_tib %>%
 #     .)
 
 writexl::write_xlsx(RD_RR_101318_wide,
-                    here::here("output", "tables", "RD_RR_int1_e4all_101318.xlsx"))
+                    here::here("output", "tables", "RD_RR_int1_exclue2e4_101318.xlsx"))
 
 # # Check Filipino
 # RD_RR_time_CI %>%
@@ -255,7 +255,7 @@ RD_RR_time_forerrorbarplot %>%
         axis.title = element_text(size = 11),
         strip.text = element_text(size = 11))
 
-ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.png"), 
+ggsave(file = here::here("output", "figures", "RD_RR_model1_exclue2e4_10yrs.png"), 
        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 ###---- model 1 at 10, 13 and 18 years of follow up ----
@@ -281,7 +281,7 @@ ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.png"),
 #        shape = "Follow up years") +
 #   guides(color = "none")
 # 
-# ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_all_fuyrs_left.png"), 
+# ggsave(file = here::here("output", "figures", "RD_RR_model1_exclue2e4_all_fuyrs_left.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 ###---- Model 1-3 at 10 years of follow up ----
@@ -317,7 +317,7 @@ RD_RR_time_forerrorbarplot %>%
         axis.title = element_text(size = 11),
         strip.text = element_text(size = 11))
 
-ggsave(file = here::here("output", "figures", "RD_RR_10fuyrs_e4all_all_models.png"), 
+ggsave(file = here::here("output", "figures", "RD_RR_10fuyrs_exclue2e4_all_models.png"), 
        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 #---- Plot curves over time ----
@@ -358,7 +358,7 @@ RD_RR_time_CI_model_long %>%
   labs(x = "Follow-up time (years)",
        y = "Predicted cumulative incidence (%)") 
 
-ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_curves_e4all.png"), 
+ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_curves_exclue2e4.png"), 
        device = "png", width = 12, height = 9, units = "in", dpi = 300)
 
 #---- OLD ----
@@ -390,7 +390,7 @@ ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_cur
 #   theme_bw()
 # # theme(legend.position="bottom")
 # 
-# ggsave(file = here::here("output", "figures", "adjusted_survival_curves_e4all.png"), 
+# ggsave(file = here::here("output", "figures", "adjusted_survival_curves_exclue2e4.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 ##---- RD over time ----
@@ -415,7 +415,7 @@ ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_cur
 #                      breaks = seq(0, 18, 2)) +
 #   theme_bw()
 # 
-# ggsave(file = here::here("output", "figures", "RD_curves_e4all.png"), 
+# ggsave(file = here::here("output", "figures", "RD_curves_exclue2e4.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 ##---- RR over time ----
@@ -438,7 +438,7 @@ ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_cur
 #   scale_x_continuous(limits = c(0, 18), 
 #                      breaks = seq(0, 18, 2)) +
 #   theme_bw()
-# ggsave(file = here::here("output", "figures", "RR_curves_e4all.png"), 
+# ggsave(file = here::here("output", "figures", "RR_curves_exclue2e4.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 
@@ -463,7 +463,7 @@ ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_cur
 #   theme(legend.position = "none") +
 #   labs(x = "Race/Ethnicity", y = "Risk Ratio at 13 years of follow up")
 # 
-# ggsave(file = here::here("output", "figures", "RR_13fuyrs_e4all.png"), 
+# ggsave(file = here::here("output", "figures", "RR_13fuyrs_exclue2e4.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 # 
 # RD_RR_time_model1_forerrorbarplot %>%
@@ -478,7 +478,7 @@ ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_cur
 #   theme(legend.position = "none") +
 #   labs(x = "Race/Ethnicity", y = "Risk Difference (%) at 13 years of follow up")
 # 
-# ggsave(file = here::here("output", "figures", "RD_perc_13fuyrs_e4all.png"), 
+# ggsave(file = here::here("output", "figures", "RD_perc_13fuyrs_exclue2e4.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 # 
 # hline_tib <- tibble(scale = c("Risk Ratio", "Risk Difference (%)"), ref = c(1, 0))
@@ -504,5 +504,5 @@ ggsave(file = here::here("output", "figures", "adjusted_cumulative_incidence_cur
 #   theme(legend.position = "none",
 #         plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
 # 
-# ggsave(file = here::here("output", "figures", "RD_RR_13fuyrs_e4all_title.jpg"), 
+# ggsave(file = here::here("output", "figures", "RD_RR_13fuyrs_exclue2e4_title.jpg"), 
 #        device = "jpg", width = 7, height = 5, units = "in", dpi = 300)
