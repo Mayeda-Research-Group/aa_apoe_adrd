@@ -147,14 +147,16 @@ AJ_tib_age_adj <- broom::tidy(AJ_fit_age_adj) %>%
          state = case_when(state == "(s0)" ~ "Alive without dementia",
                            state == "death" ~ "Death without dementia",
                            state == "dementia" ~ "Dementia")) %>%
-  mutate(ethnicity = factor(ethnicity, levels = c("Non-Latino White", "Asian American", 
-                                                  "Chinese", "Japanese", "Filipino")),
+  mutate(ethnicity = factor(ethnicity, levels = c("Chinese", "Japanese", "Filipino",
+                                                  "Asian American", "Non-Latino White")),
          apoe_y = factor(apoe_y, levels = c(1, 0)),
          ethn_grp = ifelse(ethnicity %in% c("Non-Latino White", "Asian American"), "All", 
-                           "Asian American ethnic groups"))
+                           "Asian American ethnic groups"),
+         ethn_grp = factor(ethn_grp, levels = c("Asian American ethnic groups",
+                                                "All")))
 
 ##---- 10 year dementia Cumulative incidence ----
-color_palette <- c("#4B4B4B", "#B69833", "#7B5AA3", "#ED9DB2", "#54B663")
+color_palette <- c("#7B5AA3", "#ED9DB2", "#54B663", "#B69833", "#4B4B4B")
 AJ_tib_age_adj %>% 
   mutate(across(c("estimate", "conf.low", "conf.high"), function(x) x*100)) %>%
   filter(state == "Dementia", time >= 10) %>%
@@ -168,7 +170,7 @@ AJ_tib_age_adj %>%
     stat = "identity",
     aes(ymin = conf.low, ymax = conf.high), width = .2,
     position = position_dodge(.9)) + 
-  # scale_y_continuous(breaks = seq(0, 30, by = 5)) +
+  scale_y_continuous(breaks = seq(0, 25, by = 2)) +
   scale_alpha_discrete(range = c(1, 0.5)) +
   scale_fill_manual(values = color_palette) +
   #theme(axis.text.x = element_text(angle = 45,  vjust = 1, hjust = 1)) +
@@ -183,8 +185,13 @@ AJ_tib_age_adj %>%
   # scale_fill_brewer(palette = "Paired") +
   facet_grid(. ~ ethn_grp, scales = "free", space = "free")
 
-ggsave(here::here("output", "figures", "figure_age_adj_ci_dem_ethn_10yrs_e4all.png"),
-       device = "png", width = 7, height = 5, units = "in", dpi = 300)
+ggsave(here::here("output", "figures", "figure_age_adj_ci_dem_ethn_10yrs_e4all.jpg"),
+       device = "jpg", width = 7, height = 5, units = "in", dpi = 600)
+ggsave(here::here("output", "figures", "figure_age_adj_ci_dem_ethn_10yrs_e4all.tiff"),
+       device = "tiff", width = 7, height = 5, units = "in", dpi = 600)
+ggsave(here::here("output", "figures", "figure_age_adj_ci_dem_ethn_10yrs_e4all.pdf"),
+       device = "pdf", width = 7, height = 5, units = "in", dpi = 600)
+
 
 ##---- 10 year dementia and dementia-free death cumulative incidence table ----
 AJ_tib_age_adj %>%
@@ -218,15 +225,21 @@ write_xlsx(AJ_age_dem_death_table,
 
 ##---- Cumulative incidence plot Dementia only ----
 AJ_tib_age_adj %>% 
-  mutate(across(c("estimate", "conf.low", "conf.high"), function(x) x*100)) %>%
-  # cut the y axis at 50, top coded conf.high at 50
-  mutate(conf.high_tc = case_when(conf.high >= 50 ~ 50,
-                                  TRUE ~ conf.high)) %>%
+  mutate(across(c("estimate", "conf.low", "conf.high"), function(x) x*100),
+         # cut the y axis at 60, top coded conf.high at 60
+         conf.high_tc = case_when(conf.high >= 60 ~ 60,
+                                  TRUE ~ conf.high),
+         race_facet = ifelse(ethnicity %in% c("Non-Latino White", "Asian American"), "All", 
+                             "Asian American ethnic groups"),
+         race_facet = factor(race_facet, levels = c("Asian American ethnic groups",
+                                                    "All"))) %>%
   filter(state == "Dementia") %>%
   ggplot(aes(x = time, y = estimate, group = apoe_y)) +
   geom_line(aes(color = apoe_y)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high_tc, fill = apoe_y), alpha = 0.2) +
-  facet_grid(cols = vars(ethnicity), scales = "free", space = "free") +
+  # facet_grid(cols = vars(ethnicity), scales = "free", space = "free") +
+  facet_nested(~ race_facet + ethnicity,
+               scales = "free", space = "free") +
   scale_color_manual(
     name = NULL,
     values = c("#3271AE", "#E5A84B"),
@@ -237,7 +250,7 @@ AJ_tib_age_adj %>%
     values = c("#3271AE", "#E5A84B"),
     labels = c(expression(paste(italic("APOE-"), italic(epsilon), italic("4"), " carriers")),
                "Non-carriers")) +
-  scale_y_continuous(limits = c(0, 50), breaks = seq(0, 50, 10)) +
+  scale_y_continuous(limits = c(0, 60), breaks = seq(0, 60, 10)) +
   theme_bw() +
   theme(legend.position = "bottom") +
   labs(x = "Follow-up time (years)",
@@ -246,8 +259,8 @@ AJ_tib_age_adj %>%
 # for footnotes
 AJ_tib_age_adj %>% 
   mutate(across(c("estimate", "conf.low", "conf.high"), function(x) x*100)) %>%
-  # cut the y axis at 50, top coded conf.high at 50
-  mutate(conf.high_tc = case_when(conf.high >= 50 ~ 50,
+  # cut the y axis at 60, top coded conf.high at 60
+  mutate(conf.high_tc = case_when(conf.high >= 60 ~ 60,
                                   TRUE ~ conf.high)) %>%
   filter(state == "Dementia", ethnicity == "Filipino", conf.high_tc < conf.high) %>%
   select(time, conf.high) %>%
@@ -258,7 +271,11 @@ ggsave(here::here("output", "figures", "fig_cuminc_AJ_dem_ethns_withCI_e4all.png
 
 ##---- Cumulative incidence plot dementia-free death only ----
 AJ_tib_age_adj %>% 
-  mutate(across(c("estimate", "conf.low", "conf.high"), function(x) x*100)) %>%
+  mutate(across(c("estimate", "conf.low", "conf.high"), function(x) x*100),
+         race_facet = ifelse(ethnicity %in% c("Non-Latino White", "Asian American"), "All", 
+                             "Asian American ethnic groups"),
+         race_facet = factor(race_facet, levels = c("Asian American ethnic groups",
+                                                    "All"))) %>%
   # # cut the y axis at 50, top coded conf.high at 50
   # mutate(conf.high_tc = case_when(conf.high >= 50 ~ 50,
   #                                 TRUE ~ conf.high)) %>%
@@ -266,7 +283,9 @@ AJ_tib_age_adj %>%
   ggplot(aes(x = time, y = estimate, group = apoe_y)) +
   geom_line(aes(color = apoe_y), linetype = "dashed") +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = apoe_y), alpha = 0.2) +
-  facet_grid(cols = vars(ethnicity), scales = "free", space = "free") +
+  # facet_grid(cols = vars(ethnicity), scales = "free", space = "free") +
+  facet_nested(~ race_facet + ethnicity,
+               scales = "free", space = "free") +
   scale_color_manual(
     name = NULL,
     values = c("#3271AE", "#E5A84B"),

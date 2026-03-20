@@ -43,6 +43,9 @@ data_for_table_1 <- aa_apoe_tte_selected %>%
          prev_combined_stroke_flag,
          main_dem_v1_end_type, main_dem_v1_fu_time, 
          apoe_y) %>%
+  mutate(across(c(edu_3, marital_2, usaborn_rev, generalhealth_3),
+                ~case_when(is.na(.x) ~ "NA",
+                           TRUE ~ as.character(.x)))) %>%
   set_variable_labels(apoe_y = "APOE e4 carrier",
                       survey_age = "Survey age, years",
                       female = "Female",
@@ -62,13 +65,15 @@ data_for_table_1 <- aa_apoe_tte_selected %>%
                       main_dem_v1_fu_time = "Follow up time",
                       ethnicity_rev = "Race/ethnicity") %>%
   set_value_labels(apoe_y = c("APOE-e4+" = 1, "APOE-e4-" = 0),
-                   edu_3 = c("Less than high school" = 1, 
-                             "High school and some college" = 2,
-                             "College and above" = 3),
-                   marital_2 = c("Yes" = 1, "No" = 0),
-                   generalhealth_3 = c("Excellent/Very Good" = 3,
-                                       "Good" = 2,
-                                       "Fair/Poor" = 1),
+                   edu_3 = c("Less than high school" = "1", 
+                             "High school and some college" = "2",
+                             "College and above" = "3", 
+                             "Missing" = "NA"),
+                   marital_2 = c("Yes" = "1", "No" = "0", "Missing" = "NA"),
+                   generalhealth_3 = c("Excellent/Very Good" = "3",
+                                       "Good" = "2",
+                                       "Fair/Poor" = "1", "Missing" = "NA"),
+                   usaborn_rev = c("Yes" = "1", "No" = "0", "Missing" = "NA"),
                    main_dem_v1_end_type = 
                      c("Dementia" = "DEMENTIA",
                        "Death" = "DEATH",
@@ -90,21 +95,22 @@ data_for_table_1 <- aa_apoe_tte_selected %>%
 table_1_res <- data_for_table_1 %>%
   filter(ethnicity_rev %in% c(2, 3, 5, 9)) %>%
   modify_if(is.labelled, to_factor) %>%
+  # modify_if(is.factor, ~forcats::fct_na_value_to_level(.x, level = "Missing")) %>% 
   tbl_strata(
     strata = ethnicity_rev,
     .tbl_fun =
       ~ .x %>%
-      tbl_summary(type = all_continuous() ~ "continuous",
+      tbl_summary(type = all_continuous() ~ "continuous2",
                   digits = list(all_continuous() ~ 1,
                                 all_categorical() ~ c(0, 1)),
-                  statistic = list(all_categorical() ~ "{p}",
-                                   # all_categorical() ~ "{n} ({p})",
-                                   all_continuous() ~ "{mean} ({sd})"),
+                  statistic = list(
+                    all_categorical() ~ c("{p}"),
+                    # all_categorical() ~ "{n} ({p})",
+                    all_continuous() ~ c("{mean} ({sd})")),
                   by = apoe_y,
-                  missing = "no") %>%
-      # missing = "ifany",
-      # missing_text = "Missing") %>%
-      # add_overall %>%
+                  missing = "ifany", 
+                  missing_text = "Missing",
+                  missing_stat = "{p_miss}") %>%
       modify_header(label = "") %>%
       modify_spanning_header(starts_with("stat_") ~ "**APOE**")) %>%
   modify_header(all_stat_cols() ~ 
@@ -241,7 +247,8 @@ table_3_res <- data_for_table_3 %>%
       tbl_summary(type = all_continuous() ~ "continuous",
                   digits = list(all_continuous() ~ 1,
                                 all_categorical() ~ c(0, 1)),
-                  statistic = list(all_categorical() ~ "{n} ({p})",
+                  statistic = list(all_categorical() ~ c("{p}"),
+                                   # all_categorical() ~ "{n} ({p})",
                                    all_continuous() ~ "{mean} ({sd})"),
                   by = death_fu,
                   missing = "no") %>%

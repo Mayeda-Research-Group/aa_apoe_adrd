@@ -18,13 +18,14 @@ source(here::here("scripts", "0.paths.R"))
 
 #---- Load the results ----
 race_varlabel <- c("overall", "chn", "jpn", "phl", "wht", "AA")
+results_folder <- paste0(path_to_box, 
+                         "Asian_Americans_dementia_data/aa_apoe_dementia/", 
+                         "model_results/hoffman2/", "e4all_prevapoe/") # "e4all/", 
 for (r in race_varlabel){
   temp <- tibble()
   for (b in 0:1000){
     temp <- bind_rows(
-      temp, readRDS(paste0(path_to_box, 
-                           "Asian_Americans_dementia_data/aa_apoe_dementia/", 
-                           "model_results/hoffman2/e4all/plr_bootstrap/",
+      temp, readRDS(paste0(results_folder, "plr_bootstrap/",
                            paste0(r, "_RD_RR_time_wide_", b, ".RDS"))))
   }
   assign(paste0(r, "_RD_RR_time_wide"), temp)
@@ -37,13 +38,11 @@ rm(temp)
 # for (r in race_varlabel){
 #   for (b in 0:1000){
 #     warnings <- bind_rows(
-#       warnings, readRDS(paste0(path_to_box,
-#                                "Asian_Americans_dementia_data/aa_apoe_dementia/",
-#                                "model_results/hoffman2/e4all/warnings/",
+#       warnings, readRDS(paste0(results_folder, "warnings/",
 #                                paste0(r, "_warning_", b, ".RDS"))))
 #   }
 # }
-
+# 
 # # Check the distribution of estimates with and without warnings
 # warnings_filtered <- warnings %>%
 #   filter(w_glm_1 == 0, w_glm_2 == 0, w_glm_3 == 0)
@@ -92,27 +91,46 @@ rm(temp)
 race_labels <- c("Overall", "Chinese", "Japanese", "Filipino", "Non-Latino White", "Asian American")
 fu_yrs <- 0:18
 RD_RR_time_CI <- tibble()
+APOE_prev_CI <- tibble()
 for (i in 1:length(race_varlabel)){
-  # Calculating excess risk
-  # [P(Y1 = 1) - P(Y0 = 1)]/P(Y1 = 1)
+  # APOE prev
+  temp_apoe_pe_CI <- get(paste0(race_varlabel[[i]], "_RD_RR_time_wide"))  %>%
+    filter(i_boot == 0) %>%
+    select(race, apoe_prop) %>% 
+    cbind(.,
+          get(paste0(race_varlabel[[i]], "_RD_RR_time_wide"))  %>%
+            reframe(across(c(apoe_prop), ~quantile(.x, c(0.025, 0.975)))) %>%
+            mutate(estimate = c("p2.5th", "p97.5th")) %>%
+            pivot_wider(names_from = estimate, values_from = apoe_prop,
+                        names_prefix = "apoe_prop_"))
+  
+  APOE_prev_CI  <- bind_rows(APOE_prev_CI, temp_apoe_pe_CI)
+  
   temp <- get(paste0(race_varlabel[[i]], "_RD_RR_time_wide"))  %>%
     # pivot longer for calculation at each follow up years across model predicted risks
-    pivot_longer(cols = !c(i_boot, scenario_num, race),
+    pivot_longer(cols = !c(i_boot, scenario_num, race, apoe_prop),
                  names_to = c(".value", "model", "year"),
                  names_pattern = "(.*)_model_(\\d)_y(\\d+)") %>%
-    mutate(excsfrac = (mean_cif1 - mean_cif0)/mean_cif1,
-           excsfrac_perc = excsfrac * 100) %>%
-    pivot_wider(id_cols = c(i_boot, scenario_num, race),
+    mutate(
+      # Calculating excess risk
+      # [P(Y1 = 1) - P(Y0 = 1)]/P(Y1 = 1)
+      excsfrac = (mean_cif1 - mean_cif0)/mean_cif1,
+      excsfrac_perc = excsfrac * 100,
+      # Calculating PAR
+      # [P(E=1)*(RR-1)/1 + P(E=1)* (RR-1)
+      par = (apoe_prop * (RR - 1)) / (1 + apoe_prop * (RR - 1)),
+      par_perc = par * 100) %>%
+    pivot_wider(id_cols = c(i_boot, scenario_num, race, apoe_prop),
                 names_from = c(model, year),
-                values_from = !c(i_boot, scenario_num, race, model, year),
+                values_from = !c(i_boot, scenario_num, race, apoe_prop, model, year),
                 names_glue = "{.value}_model_{model}_y{year}")
   
   # # Check if other values match
   # diffdf::diffdf(temp, get(paste0(race_varlabel[[i]], "_RD_RR_time_wide")))
-
+  
   temp1 <- temp %>% 
     filter(i_boot != 0) %>%
-    select(-race, -contains("int_RD"), -i_boot, -scenario_num) %>%
+    select(-contains("int_RD"), -c(i_boot, scenario_num, race, apoe_prop)) %>%
     reframe(across(everything(), ~quantile(.x, c(0.025, 0.975)))) %>%
     mutate(estimate = c("p2.5th", "p97.5th"),
            race = race_labels[[i]]) %>%
@@ -125,7 +143,7 @@ for (i in 1:length(race_varlabel)){
   
   temp2 <- temp %>% 
     filter(i_boot == 0) %>%
-    select(-contains("int_RD"), -i_boot, -scenario_num) %>%
+    select(-contains("int_RD"),  -c(i_boot, scenario_num, race, apoe_prop)) %>%
     mutate(estimate = "pe",
            race = race_labels[[i]]) %>%
     select(estimate, race, everything()) %>%
@@ -140,12 +158,10 @@ for (i in 1:length(race_varlabel)){
 remove(temp, temp1, temp2)
 save(RD_RR_time_CI, file = paste0(path_to_box, 
                                   "Asian_Americans_dementia_data/aa_apoe_dementia/", 
-                                  "model_results/hoffman2/e4all/RD_RR_time_CI.RData"))
+                                  "model_results/hoffman2/e4all_prevapoe/RD_RR_time_CI.RData"))
 
 #---- Estimates ----
-load(paste0(path_to_box, 
-            "Asian_Americans_dementia_data/aa_apoe_dementia/", 
-            "model_results/hoffman2/e4all/RD_RR_time_CI.RData"))
+load(paste0(results_folder, "/RD_RR_time_CI.RData"))
 race_labels <- c("Overall", "Chinese", "Japanese", "Filipino", "Non-Latino White", "Asian American")
 for (fy in c(10, 13, 18)){
   temp <- RD_RR_time_CI %>%
@@ -154,10 +170,10 @@ for (fy in c(10, 13, 18)){
     pivot_longer(cols = -c(estimate, race, fu_yr),
                  names_to = c(".value", "model"),
                  names_pattern = "(.*)_model_(.*)") %>%
-    select(race, estimate, model, RD_perc, RR, excsfrac_perc) %>%
-    mutate_at(vars(RD_perc, excsfrac_perc), sprintf, fmt = '%#.1f') %>%
+    select(race, estimate, model, RD_perc, RR, excsfrac_perc, par_perc) %>%
+    mutate_at(vars(RD_perc, excsfrac_perc, par_perc), sprintf, fmt = '%#.1f') %>%
     mutate(RR = sprintf(fmt = "%#.2f", RR)) %>%
-    pivot_wider(names_from = estimate, values_from = `RD_perc`:`excsfrac_perc`) %>%
+    pivot_wider(names_from = estimate, values_from = `RD_perc`:`par_perc`) %>%
     mutate(
       !!sym(paste0("RR (95% CI) at year ", fy)) :=
         paste0(`RR_pe`, "\n (", `RR_p2.5th`, ", ", 
@@ -167,7 +183,10 @@ for (fy in c(10, 13, 18)){
                `RD_perc_p97.5th`, ")"),
       !!sym(paste0("Excess fraction % (95% CI) at year ", fy)) :=
         paste0(`excsfrac_perc_pe`, "\n (", `excsfrac_perc_p2.5th`, ", ", 
-               `excsfrac_perc_p97.5th`, ")")) %>%
+               `excsfrac_perc_p97.5th`, ")"),
+      !!sym(paste0("PAR % (95% CI) at year ", fy)) :=
+        paste0(`par_perc_pe`, "\n (", `par_perc_p2.5th`, ", ", 
+               `par_perc_p97.5th`, ")"),) %>%
     select(race, model, contains("(95% CI)"))
   assign(paste0("RD_RR_", fy, "_tib"), temp)
 }
@@ -175,14 +194,32 @@ RD_RR_101318_tib <- plyr::join_all(list(RD_RR_10_tib, RD_RR_13_tib, RD_RR_18_tib
                                    type = "left",
                                    by = c("race", "model"))
 
-##---- RD, RR and excess risk 10, 13, 18 years of follow up  table ----
-race_fac_labels <- c("Non-Latino White", "Asian American", "Chinese", "Japanese", "Filipino")
+##---- APOE prev ----
+APOE_prev_CI %>%
+  mutate_if(is.numeric, ~ sprintf(fmt = '%#.1f', .x * 100)) %>%
+  mutate(apoe_prop_CI = paste0(apoe_prop, " (", apoe_prop_p2.5th, 
+                               ", ", apoe_prop_p97.5th, ")")) %>%
+  select(race, apoe_prop_CI)
+# # A tibble: 6 × 2
+# race    apoe_prop_CI     
+# <chr>   <chr>            
+#   1 overall 24.5 (24.1, 24.9)
+# 2 chn     17.5 (15.3, 19.9)
+# 3 jpn     20.2 (17.6, 23.0)
+# 4 phl     14.2 (11.7, 17.2)
+# 5 wht     24.9 (24.4, 25.3)
+# 6 AA      17.7 (16.3, 19.1)
+
+##---- RD, RR and PAR 10, 13, 18 years of follow up  table ----
+race_fac_labels <- c("Chinese", "Japanese", "Filipino", "Asian American", "Non-Latino White")
+race_grp_fac <- c("Asian American ethnic groups", "All")
 RD_RR_101318_wide <- RD_RR_101318_tib %>%
   filter(race != "Overall") %>%
   pivot_wider(names_from = model, values_from = contains("(95% CI)")) %>%
   mutate(race = factor(race, levels = race_fac_labels),
          race_grp = ifelse(race %in% c("Non-Latino White", "Asian American"), "All", 
-                           "Asian American ethnic groups")) %>%
+                           "Asian American ethnic groups") %>%
+           factor(., levels = race_grp_fac)) %>%
   select(race_grp, race, everything()) %>% 
   arrange(race_grp, race)
 
@@ -195,8 +232,10 @@ RD_RR_101318_wide <- RD_RR_101318_tib %>%
 #     names(RD_RR_101318_wide)),
 #     .)
 
+
+
 writexl::write_xlsx(RD_RR_101318_wide,
-                    here::here("output", "tables", "RD_RR_int1_e4all_101318.xlsx"))
+                    here::here("output", "tables", "RD_RR_int1_e4all_prevapoe_101318.xlsx"))
 
 # # Check Filipino
 # RD_RR_time_CI %>%
@@ -220,10 +259,14 @@ RD_RR_time_forerrorbarplot <- RD_RR_time_CI_model_long %>%
   select(estimate, race, model, fu_yr, RD_perc, RR) %>%
   mutate(race = factor(race, levels = race_fac_labels),
          race_facet = ifelse(race %in% c("Non-Latino White", "Asian American"), "All", 
-                             "Asian American ethnic groups")) %>%
+                             "Asian American ethnic groups"),
+         race_facet = factor(race_facet, levels = c("Asian American ethnic groups",
+                                                    "All"))) %>%
   pivot_wider(names_from = estimate, values_from = `RD_perc`:`RR`)
 
-color_palette <- c("#4B4B4B", "#B69833", "#7B5AA3", "#ED9DB2", "#54B663")
+color_palette <- c("#7B5AA3", "#ED9DB2", "#54B663", "#B69833", "#4B4B4B")
+
+# color_palette <- c("#4B4B4B", "#B69833", "#7B5AA3", "#ED9DB2", "#54B663")
 ###---- Model 1 at 10 years of follow up----
 hline_tib <- tibble(scale = c("RR", "RD_perc"), ref = c(1, 0))
 RD_RR_time_forerrorbarplot %>%
@@ -255,8 +298,14 @@ RD_RR_time_forerrorbarplot %>%
         axis.title = element_text(size = 11),
         strip.text = element_text(size = 11))
 
-ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.png"), 
-       device = "png", width = 7, height = 5, units = "in", dpi = 300)
+ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.jpg"), 
+       device = "jpg", width = 7, height = 5, units = "in", dpi = 600)
+ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.tiff"), 
+       device = "tiff", width = 7, height = 5, units = "in", dpi = 600)
+ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.eps"), 
+       device = "eps", width = 7, height = 5, units = "in", dpi = 600)
+ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.pdf"), 
+       device = "pdf", width = 7, height = 5, units = "in", dpi = 600)
 
 ###---- model 1 at 10, 13 and 18 years of follow up ----
 # hline_tib <- tibble(scale = c("Risk Ratio", "Risk Difference (%)"), ref = c(1, 0))
@@ -284,49 +333,55 @@ ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_10yrs.png"),
 # ggsave(file = here::here("output", "figures", "RD_RR_model1_e4all_all_fuyrs_left.png"), 
 #        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
-###---- Model 1-3 at 10 years of follow up ----
-hline_tib <- tibble(scale = c("RR", "RD_perc"), ref = c(1, 0))
-RD_RR_time_forerrorbarplot %>%
-  filter(fu_yr == 10 & !race %in% c("Overall")) %>%
-  pivot_longer(RD_perc_pe:RR_p97.5th, 
-               names_to = c("scale", ".value"),
-               names_pattern = "(.*)_(.*)") %>%
-  ggplot(aes(x = race, y = pe, color = race, shape = as.factor(model))) +
-  geom_errorbar(aes(ymin = p2.5th, ymax = p97.5th), width = 0.2,
-                position = position_dodge((width = 0.3))) +
-  geom_point(position = position_dodge((width = 0.3)), fill = "white") +
-  facet_grid(rows = vars(fct_rev(scale)), #vars(scale), 
-             cols = vars(race_facet),
-             scales = "free", space = "free_x", switch = "y",
-             labeller = as_labeller(
-               c(`RD_perc` = "Risk Difference %", 
-                 `RR` = "Risk Ratio",
-                 `All` = "All",
-                 `Asian American ethnic groups` = "Asian American ethnic groups"))) +
-  scale_shape_manual(values = c(21, 24, 22)) +
-  scale_color_manual(values = color_palette) +
-  scale_y_continuous(position = "right") +
-  geom_hline(data = hline_tib, aes(yintercept = ref), linetype = "dashed") +
-  theme_bw() +
-  labs(x = element_blank(), y = element_blank(),
-       shape = "Models")+
-  # title = expression("Risk Difference (%) and Risk Ratio at 13 years of follow up for the association between "*italic("APOE-"*epsilon*"4")*" and dementia")) +
-  guides(color = "none") +
-  theme(legend.position = "bottom",
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 11),
-        strip.text = element_text(size = 11))
-
-ggsave(file = here::here("output", "figures", "RD_RR_10fuyrs_e4all_all_models.png"), 
-       device = "png", width = 7, height = 5, units = "in", dpi = 300)
+# ###---- Model 1-3 at 10 years of follow up ----
+# hline_tib <- tibble(scale = c("RR", "RD_perc"), ref = c(1, 0))
+# RD_RR_time_forerrorbarplot %>%
+#   filter(fu_yr == 10 & !race %in% c("Overall")) %>%
+#   pivot_longer(RD_perc_pe:RR_p97.5th, 
+#                names_to = c("scale", ".value"),
+#                names_pattern = "(.*)_(.*)") %>%
+#   ggplot(aes(x = race, y = pe, color = race, shape = as.factor(model))) +
+#   geom_errorbar(aes(ymin = p2.5th, ymax = p97.5th), width = 0.2,
+#                 position = position_dodge((width = 0.3))) +
+#   geom_point(position = position_dodge((width = 0.3)), fill = "white") +
+#   facet_grid(rows = vars(fct_rev(scale)), #vars(scale), 
+#              cols = vars(race_facet),
+#              scales = "free", space = "free_x", switch = "y",
+#              labeller = as_labeller(
+#                c(`RD_perc` = "Risk Difference %", 
+#                  `RR` = "Risk Ratio",
+#                  `All` = "All",
+#                  `Asian American ethnic groups` = "Asian American ethnic groups"))) +
+#   scale_shape_manual(values = c(21, 24, 22)) +
+#   scale_color_manual(values = color_palette) +
+#   scale_y_continuous(position = "right") +
+#   geom_hline(data = hline_tib, aes(yintercept = ref), linetype = "dashed") +
+#   theme_bw() +
+#   labs(x = element_blank(), y = element_blank(),
+#        shape = "Models")+
+#   # title = expression("Risk Difference (%) and Risk Ratio at 13 years of follow up for the association between "*italic("APOE-"*epsilon*"4")*" and dementia")) +
+#   guides(color = "none") +
+#   theme(legend.position = "bottom",
+#         axis.text = element_text(size = 10),
+#         axis.title = element_text(size = 11),
+#         strip.text = element_text(size = 11))
+# 
+# ggsave(file = here::here("output", "figures", "RD_RR_10fuyrs_e4all_all_models.png"), 
+#        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 #---- Plot curves over time ----
 ##---- risk over time ----
+p_load("ggh4x")
 RD_RR_time_CI_model_long %>% 
   filter(!race %in% c("Overall")) %>%
-  mutate(race = factor(race, levels = race_fac_labels),
+  mutate(race = factor(race, levels = c("Chinese", "Japanese", "Filipino", 
+                                        "Asian American", "Non-Latino White")),
+         race_facet = ifelse(race %in% c("Non-Latino White", "Asian American"), "All", 
+                             "Asian American ethnic groups"),
+         race_facet = factor(race_facet, levels = c("Asian American ethnic groups",
+                                                    "All")),
          model = paste0("Model ", model)) %>%
-  select(model, race, fu_yr, estimate, mean_cif1_perc, mean_cif0_perc) %>%
+  select(model, race_facet, race, fu_yr, estimate, mean_cif1_perc, mean_cif0_perc) %>%
   pivot_longer(mean_cif1_perc:mean_cif0_perc, names_to = "apoe_y", 
                values_to = "mean_cif_perc", names_pattern = "mean_cif(.)_perc") %>%
   pivot_wider(names_from = estimate, values_from = mean_cif_perc, names_prefix = "mean_cif_") %>%
@@ -335,7 +390,9 @@ RD_RR_time_CI_model_long %>%
   geom_line(aes(color = race, linetype = apoe_y)) + 
   geom_ribbon(aes(ymin = mean_cif_p2.5th, ymax = mean_cif_p97.5th,
                   fill = race, alpha = apoe_y)) +
-  facet_grid(cols = vars(race), rows = vars(model), 
+  # facet_grid(cols = vars(race_facet, race), rows = vars(model),
+  #            scales = "free", space = "free_x") +
+  facet_nested(model ~ race_facet + race,
              scales = "free", space = "free_x") +
   scale_alpha_discrete(range = c(0.4, 0.2)) +
   guides(color = "none", fill = "none", alpha = "none") +

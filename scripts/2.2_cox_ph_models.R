@@ -139,37 +139,37 @@ HR_table_fmt <- HR_table %>%
 writexl::write_xlsx(HR_table_fmt, here::here("output", "tables",
                                              "coxph_e4all.xlsx"))
 
-##---- HR plot ----
-color_palette <- c("#4B4B4B", "#B69833", "#7B5AA3", "#ED9DB2", "#54B663")
-HR_forplot %>%
-  filter(race != "Overall") %>%
-  mutate(race = factor(race, levels = c("Non-Latino White", 
-                                        "Asian American",
-                                        "Chinese", "Japanese", "Filipino")),
-         race_grp = ifelse(race %in% c("Non-Latino White", "Asian American"), "All", 
-                           "Asian American ethnic groups")) %>%
-  ggplot(aes(x = race, y = HR, color = race, shape = as.factor(model))) +
-  geom_errorbar(aes(ymin = p2.5th, ymax = p97.5th), width = 0.2,
-                position = position_dodge((width = 0.3))) +
-  geom_point(position = position_dodge(width = 0.3), fill = "white") +
-  scale_shape_manual(values = c(21, 24, 22)) +
-  scale_y_continuous(breaks = seq(0, 5.5, 0.5)) +
-  # , position = "right") +
-  facet_grid(~ race_grp, scales = "free", space = "free",
-             switch = "y") +
-  scale_color_manual(values = color_palette) +
-  theme_bw() +
-  geom_hline(aes(yintercept = 1), linetype = "dashed") +
-  labs(x = element_blank(), y = "Hazard Ratio (95% CI)",
-       shape = "Models")+
-  guides(color = "none") +
-  theme(legend.position = "bottom",
-        axis.text = element_text(size = 10),
-        axis.title = element_text(size = 11),
-        strip.text = element_text(size = 11))
-
-ggsave(file = here::here("output", "figures", "efigure3_coxph_e4all_model123.png"),
-       device = "png", width = 7, height = 5, units = "in", dpi = 300)
+# ##---- HR plot ----
+# color_palette <- c("#4B4B4B", "#B69833", "#7B5AA3", "#ED9DB2", "#54B663")
+# HR_forplot %>%
+#   filter(race != "Overall") %>%
+#   mutate(race = factor(race, levels = c("Non-Latino White", 
+#                                         "Asian American",
+#                                         "Chinese", "Japanese", "Filipino")),
+#          race_grp = ifelse(race %in% c("Non-Latino White", "Asian American"), "All", 
+#                            "Asian American ethnic groups")) %>%
+#   ggplot(aes(x = race, y = HR, color = race, shape = as.factor(model))) +
+#   geom_errorbar(aes(ymin = p2.5th, ymax = p97.5th), width = 0.2,
+#                 position = position_dodge((width = 0.3))) +
+#   geom_point(position = position_dodge(width = 0.3), fill = "white") +
+#   scale_shape_manual(values = c(21, 24, 22)) +
+#   scale_y_continuous(breaks = seq(0, 5.5, 0.5)) +
+#   # , position = "right") +
+#   facet_grid(~ race_grp, scales = "free", space = "free",
+#              switch = "y") +
+#   scale_color_manual(values = color_palette) +
+#   theme_bw() +
+#   geom_hline(aes(yintercept = 1), linetype = "dashed") +
+#   labs(x = element_blank(), y = "Hazard Ratio (95% CI)",
+#        shape = "Models")+
+#   guides(color = "none") +
+#   theme(legend.position = "bottom",
+#         axis.text = element_text(size = 10),
+#         axis.title = element_text(size = 11),
+#         strip.text = element_text(size = 11))
+# 
+# ggsave(file = here::here("output", "figures", "efigure3_coxph_e4all_model123.png"),
+#        device = "png", width = 7, height = 5, units = "in", dpi = 300)
 
 #---- Secondary: F/U time as timescale ----
 ##---- Cox PH formulas----

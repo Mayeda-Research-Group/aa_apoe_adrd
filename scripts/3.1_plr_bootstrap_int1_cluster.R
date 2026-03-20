@@ -30,7 +30,7 @@ options(scipen = 999)
 
 #---- Load the data ----
 # # Paths (local)
-# # source(here::here("scripts", "0.paths.R"))
+# source(here::here("scripts", "0.paths.R"))
 # load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
 #             "analysis_data/aa_apoe_long_tte_selected_e4all.RData"))
 
@@ -65,7 +65,13 @@ plr_func <- function(data, b, formula, bootstrap = TRUE){
     left_join(data, by = "subjid", relationship = "many-to-many") %>% 
     select(-subjid)
   
-  #---- 1. Pooled-logistic regression models ----
+  #---- 1. Prevalence APOE ----
+  boot_data_wide <- boot_data %>%
+    select(new_id, apoe_y) %>% distinct()
+  
+  apoe_prev <- boot_data_wide %>% summarise(prop = sum(apoe_y)/n()) %>% pull()
+  
+  #---- 2. Pooled-logistic regression models ----
   tryCatch({
     plr_model_1 <<- glm(as.formula(formula[[1]]),
                         data = boot_data, family = binomial("logit"))
@@ -97,7 +103,8 @@ plr_func <- function(data, b, formula, bootstrap = TRUE){
   })
   
   plr_models <- list(plr_model_1, plr_model_2, plr_model_3)
-  #---- 2. Predict survival ----
+  
+  #---- 3. Predict survival ----
   cloned_data <- boot_data %>%
     select(new_id, survey_age_r, female, ethnicity_rev, apoe_y,
            global_eu, global_ea, paste0("eupc", 1:10),
@@ -118,7 +125,7 @@ plr_func <- function(data, b, formula, bootstrap = TRUE){
   }
   
   
-  #---- 3. Implement the cross-product Kaplan Meier method ----
+  #---- 4. Implement the cross-product Kaplan Meier method ----
   RD_RR_time <- tibble(.rows = length(0:18))
   for (m in 1:3){
     RD_RR_time %<>% cbind(
@@ -161,13 +168,14 @@ plr_func <- function(data, b, formula, bootstrap = TRUE){
   
   RD_RR_time %<>%
     mutate(fu_yr = 0:18,
-           race = race_varlabel) %>%
-    select(race, fu_yr, everything())
+           race = race_varlabel,
+           apoe_prop = apoe_prev) %>%
+    select(race, apoe_prop, fu_yr, everything())
   
   RD_RR_time_wide <- RD_RR_time %>%
     pivot_wider(names_from = fu_yr,
                 names_sep = "_y",
-                values_from = !c(race, fu_yr))
+                values_from = !c(race, fu_yr, apoe_prop))
   
   return(RD_RR_time_wide)
 }
