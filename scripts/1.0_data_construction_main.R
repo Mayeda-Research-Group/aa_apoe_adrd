@@ -139,6 +139,15 @@ with(aa_apoe_tte, summary(main_dem_v1_end_age))
 # had at least 2 years of continuous membership, and had no dementia diagnosis 
 # in the EHR: n=47,085
 
+table(is.na(aa_apoe_tte$first_dlb_dx_v1_age), aa_apoe_tte$ethnicity_rev)
+#           1     2     3     4     5     6     7     8     9    10
+# FALSE     0     6     3     0     0     0     0     0   207     0
+# TRUE    176  1079   848    73   592    75    36    80 44249    92
+table(is.na(aa_apoe_tte$first_pddem_dx_v1_age), aa_apoe_tte$ethnicity_rev)
+#           1     2     3     4     5     6     7     8     9    10
+# FALSE     0     6     2     0     4     0     0     0   363     0
+# TRUE    176  1079   849    73   588    75    36    80 44093    92
+
 # n = 485 not in Main dementia definition sample and non dementia at survey
 aa_apoe_tte %>% filter(!(main_dem_v1_sample == 1)) %>% nrow()
 with(aa_apoe_tte %>% filter(!(main_dem_v1_sample == 1)), summary(main_dem_v1_dem_flag))
@@ -158,6 +167,46 @@ aa_apoe_tte %>% filter(!ethnicity_rev %in% c(2, 3, 5, 9)) %>%
   with(table(ethnicity_rev, useNA = "ifany"))
 
 aa_apoe_tte %<>% filter(!is.na(ethnicity_rev), ethnicity_rev != 8) # n=47,005
+
+# Juliet to run
+table(aa_apoe_tte$ethnicity_rev, useNA = "ifany") # ethnicity_rev == 10, n=89
+aa_apoe_tte %>% filter(ethnicity_rev == 10) %>% 
+  select(
+    ethn_south_asian, 
+    ethn_chinese, ethn_japanese, ethn_korean, ethn_filipino, 
+    ethn_vietnamese, ethn_other_se_asian, ethn_any_pac_islander
+  ) %>% 
+  apply(., 2, table, useNA = "ifany")
+#   ethn_south_asian ethn_chinese ethn_japanese ethn_korean ethn_filipino ethn_vietnamese ethn_other_se_asian ethn_any_pac_islander
+# 0               75           24            64          81            57              80                  85                    58
+# 1               14           65            25           8            32               9                   4                    31
+
+aa_apoe_tte %>% 
+  filter(ethnicity_rev == 10) %>% 
+  select(
+    ethn_south_asian, 
+    ethn_chinese, ethn_japanese, ethn_korean, ethn_filipino, 
+    ethn_vietnamese, ethn_other_se_asian, ethn_any_pac_islander
+  ) %>% 
+  mutate(n_asian_ethns = rowSums(.)) %>% 
+  with(table(n_asian_ethns, useNA = "ifany"))
+# number of asian ethnicities
+# 2 ethnicities: n = 81
+# 3: 6
+# 4: 2
+
+aa_apoe_tte %>% 
+  filter(ethnicity_rev == 10) %>% 
+  select(
+    ethn_south_asian, 
+    ethn_chinese, ethn_japanese, ethn_korean, ethn_filipino, 
+    ethn_vietnamese, ethn_other_se_asian, ethn_any_pac_islander
+  ) %>% 
+  mutate(n_asian_ethns = rowSums(.)) %>% 
+  filter(n_asian_ethns == 2) %>% 
+  group_by_all() %>% 
+  count() %>% 
+  View()
 
 # 2. n=46,894 
 # Exclude Asian ethnic group with <10 dementia cases among APOE-ε4 carriers 

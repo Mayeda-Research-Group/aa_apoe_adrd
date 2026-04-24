@@ -109,7 +109,7 @@ plr_func <- function(data, b, formula, bootstrap = TRUE){
     select(new_id, survey_age_r, female, ethnicity_rev, apoe_y,
            global_eu, global_ea, paste0("eupc", 1:10),
            paste0("eapc", 1:6)) %>%
-    unique() %>%
+    distinct() %>%
     expand_grid(fu_yr = 0:18)
   
   for (m in 1:3){

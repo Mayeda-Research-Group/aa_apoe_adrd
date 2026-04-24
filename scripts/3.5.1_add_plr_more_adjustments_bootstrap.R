@@ -1,21 +1,46 @@
-# Pooled logistic regression additional adjustment (no bootstrap)
+# Pooled logistic regression additional adjustment
 # use hotdeck dataset
 
+# Hoffman setup -----------------------------------------------------------
+
+# Read in the arguments listed in the:
+# R CMD BATCH --no-save --no-restore "--args scenario_num=$SGE_TASK_ID"  
+## expression:
+
+args = (commandArgs(TRUE))
+
+# Check to see if arguments are passed and set default values if not.
+# If so, parse the arguments. (I only have one argument here.)
+if (length(args) == 0) {
+  print("No arguments supplied.")
+  ##supply default values
+  scenario_num <- 1
+} else {
+  for (i in 1:length(args)) {
+    eval(parse(text = args[[i]])) # parse each argument (only have 1 here)
+  }
+}
+
 #---- Package loading ----
+# rm(list = ls())
 library(tidyverse)
 library(magrittr)
-library(here)
+# library(here)
 # No scientific notation
 options(scipen = 999)
 
 #---- Load the data ----
 # # Paths (local)
-source(here::here("scripts", "0.paths.R"))
-load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
-            "analysis_data/aa_apoe_long_tte_selected_e4all_hotdeck.RData"))
+# source(here::here("scripts", "0.paths.R"))
+# load(paste0(path_to_box, "Asian_Americans_dementia_data/aa_apoe_dementia/",
+#             "analysis_data/aa_apoe_long_tte_selected_e4all_hotdeck.RData"))
+
+# Paths cluster
+project_folder <- paste0("/u/home/y/yixzhou/aa_apoe_adrd/")
+load(paste0(project_folder, "data/aa_apoe_long_tte_selected_e4all_hotdeck.RData"))
 
 #---- plr function ----
-plr_func <- function(data, b, race_varlabel, subsample, bootstrap = TRUE){
+plr_func <- function(data, b, race_varlabel, subsample, bootstrap = F){
   # data <- aa_apoe_long_tte_selected
   # race_varlabel <- "overall"
   # subsample <- "2, 3, 5, 9"
@@ -40,7 +65,7 @@ plr_func <- function(data, b, race_varlabel, subsample, bootstrap = TRUE){
     # Model 4: 
     formula_4 = paste0(formula_1, " + ", "edu_3 + usaborn_rev + income_pp"),
     # Model 5:
-    formula_5 = paste0(formula_1, " + ", "edu_3 + usaborn_rev + income_pp + hbp + diab + sr_depress")
+    formula_5 = paste0(formula_1, " + ", "edu_3 + usaborn_rev + income_pp + prev_htn_flag + prev_diab_flag + sr_depress")
   )
   
   #---- 0. Data preparation ----
@@ -70,49 +95,45 @@ plr_func <- function(data, b, race_varlabel, subsample, bootstrap = TRUE){
   apoe_prev <- boot_data_wide %>% summarise(prop = sum(apoe_y)/n()) %>% pull()
   
   #---- 2. Pooled-logistic regression models ----
-  plr_model_1 <<- glm(as.formula(formula[[1]]),
-                      data = boot_data, family = binomial("logit"))
-  # tryCatch({
-  #   
-  #   w_glm_1 <<- c(w_glm_1, 0)
-  # }, warning = function(w) {
-  #   w_glm_1 <<- c(w_glm_1, 1)
-  #   plr_model_1 <<- glm(as.formula(formula[[1]]),
-  #                       data = boot_data, family = binomial("logit"))
-  # })
+  tryCatch({
+    plr_model_1 <<- glm(as.formula(formula[[1]]),
+                        data = boot_data, family = binomial("logit"))
+    w_glm_1 <<- c(w_glm_1, 0)
+  }, warning = function(w) {
+    w_glm_1 <<- c(w_glm_1, 1)
+    plr_model_1 <<- glm(as.formula(formula[[1]]),
+                        data = boot_data, family = binomial("logit"))
+  })
   
-  plr_model_2 <<- glm(as.formula(formula[[2]]),
-                      data = boot_data, family = binomial("logit"))
+  tryCatch({
+    plr_model_2 <<- glm(as.formula(formula[[2]]),
+                        data = boot_data, family = binomial("logit"))
+    w_glm_2 <<- c(w_glm_2, 0)
+  }, warning = function(w) {
+    w_glm_2 <<- c(w_glm_2, 1)
+    plr_model_2 <<- glm(as.formula(formula[[2]]),
+                        data = boot_data, family = binomial("logit"))
+  })
   
-  # tryCatch({
-  #  
-  #   w_glm_2 <<- c(w_glm_2, 0)
-  # }, warning = function(w) {
-  #   w_glm_2 <<- c(w_glm_2, 1)
-  #   plr_model_2 <<- glm(as.formula(formula[[2]]),
-  #                       data = boot_data, family = binomial("logit"))
-  # })
-  
-  plr_model_3 <<- glm(as.formula(formula[[3]]),
-                      data = boot_data, family = binomial("logit"))
-  # tryCatch({
-  #   
-  #   w_glm_3 <<- c(w_glm_3, 0)
-  # }, warning = function(w) {
-  #   w_glm_3 <<- c(w_glm_3, 1)
-  #   plr_model_3 <<- glm(as.formula(formula[[3]]),
-  #                       data = boot_data, family = binomial("logit"))
-  # })
+  tryCatch({
+    plr_model_3 <<- glm(as.formula(formula[[3]]),
+                        data = boot_data, family = binomial("logit"))
+    w_glm_3 <<- c(w_glm_3, 0)
+  }, warning = function(w) {
+    w_glm_3 <<- c(w_glm_3, 1)
+    plr_model_3 <<- glm(as.formula(formula[[3]]),
+                        data = boot_data, family = binomial("logit"))
+  })
   
   plr_models <- list(plr_model_1, plr_model_2, plr_model_3)
   
   #---- 3. Predict survival ----
   cloned_data <- boot_data %>%
     select(new_id, survey_age_r, female, ethnicity_rev, apoe_y,
-           edu_3, usaborn_rev, income_pp, hbp, diab, sr_depress, 
+           edu_3, usaborn_rev, income_pp, prev_htn_flag, prev_diab_flag, sr_depress,
            global_eu, global_ea, paste0("eupc", 1:10),
            paste0("eapc", 1:6)) %>%
-    unique() %>%
+    distinct() %>%
     expand_grid(fu_yr = 0:18)
   
   for (m in 1:3){
@@ -184,72 +205,88 @@ plr_func <- function(data, b, race_varlabel, subsample, bootstrap = TRUE){
 }
 
 #----- scenario tibble ----
-# n_bootstrap_per_job = 200
-# n_bootstrap = 1000
-scenario_tib <- tibble(
-  race_varlabels = c("overall", "chn", "jpn", "phl", "wht", "AA")
-  ) %>% 
+n_bootstrap_per_job = 200
+n_bootstrap = 1000
+scenario_tib <- expand_grid(
+  race_varlabels = c("overall", "chn", "jpn", "phl", "wht", "AA"),
+  boot_i = c(paste0(seq(1, n_bootstrap-n_bootstrap_per_job + 1, 
+                        by = n_bootstrap_per_job), "-",
+                    seq(n_bootstrap_per_job, n_bootstrap, 
+                        by = n_bootstrap_per_job)))) %>%
   mutate(subsamples = case_when(race_varlabels == "overall" ~ "2, 3, 5, 9",
                                 race_varlabels == "chn" ~ "2",
                                 race_varlabels == "jpn" ~ "3",
                                 race_varlabels == "phl" ~ "5",
                                 race_varlabels == "wht" ~ "9",
-                                race_varlabels == "AA" ~ "2, 3, 5"))
+                                race_varlabels == "AA" ~ "2, 3, 5")) %>%
+  separate(boot_i, into = c("boot_i_start", "boot_i_end"), sep = "-") %>%
+  mutate_at(vars(boot_i_start), ~ifelse(boot_i_start == 1, 0, .)) %>% 
+  filter(race_varlabels != "overall")
+
+# Make sure that scenario_num is not greater than all the scenario index
+if (scenario_num > nrow(scenario_tib)) {
+  print("out of bound senario number")
+  # supply default value
+  scenario_num <- 1
+}
+
+# print values just to make sure:
+print(scenario_num)
+scenario <- scenario_tib[scenario_num, ]
+race_varlabel <- scenario$race_varlabels
+subsample <- scenario$subsamples
+boot_i_start <- scenario$boot_i_start
+boot_i_end <- scenario$boot_i_end
+
+print(race_varlabel)
+print(subsample)
+print(boot_i_start)
+print(boot_i_end)
 
 #---- results ----
+w_glm_1 <- w_glm_2 <- w_glm_3 <- numeric()
 
-results <- lapply(
-  1:nrow(scenario_tib), 
-  \(x) plr_func(data = aa_apoe_long_tte_selected, 
-                b = 1,
-                bootstrap = F,
-                race_varlabel = scenario_tib$race_varlabels[x],
-                subsample = scenario_tib$subsamples[x])
-)
+#---- Bootstrap ----
+for (i_boot in boot_i_start:boot_i_end) {
+  print(i_boot)
+  # i_boot <- 0 # point estimate, using full dataset, no resampling
+  # i_boot <- 1 # and so on: bootstrap
+  start <- Sys.time() # record starting time
+  result <- plr_func(aa_apoe_long_tte_selected, b = i_boot,  
+                     race_varlabel = race_varlabel,
+                     subsample = subsample,
+                     bootstrap = i_boot != 0)
+  out <- tibble(i_boot = i_boot, 
+                scenario_num = scenario_num) %>%
+    cbind(., result)
+  end <- Sys.time() # record ending time
+  
+  # save the bootstraps
+  write_csv(
+    out,
+    append = i_boot != boot_i_start, 
+    file = paste0(project_folder, "/model_results/",
+                  "bootstraps_scenario_", scenario_num, ".csv")
+  )
+  
+  # saveRDS(out, paste0(project_folder, "/model_results/plr_bootstrap/",
+  #                     paste0(race_varlabel,
+  #                            "_RD_RR_time_wide_", i_boot, ".RDS")))
+  
+  # warning_summary <- tibble(
+  #   i_boot = i_boot,
+  #   race = race_varlabel,
+  #   model = model_formulas, 
+  #   scenario = scenario_num,
+  #   duration = difftime(end, start, units = 'mins'),
+  #   # 3 rows but it actually was within one run
+  #   w_glm_1 = sum(w_glm_1), 
+  #   w_glm_2 = sum(w_glm_2),
+  #   w_glm_3 = sum(w_glm_3))
+  # 
+  # saveRDS(warning_summary,
+  #         paste0(project_folder, "/model_results/warnings/",
+  #                paste0(race_varlabel,"_warning_", i_boot, ".RDS")))
+}
 
-save(results, file = here("output", "tables", "additional_adj_results.RData"))
 
-# #---- old ----
-# 
-# pmap_dfr(
-#   scenario_tib %>% slice(1),
-#   \(race_varlabel, subsamples) plr_func(data = aa_apoe_long_tte_selected, 
-#                                         b = 1,
-#                                         bootstrap = F,
-#                                         race_varlabel = race_varlabel,
-#                                         subsample = subsamples))
-# 
-# 
-# function(data, b, formula, race_varlabel, subsample, bootstrap = TRUE){
-#   
-#   for (i_boot in boot_i_start:boot_i_end) {
-#     print(i_boot)
-#     # i_boot <- 0 # point estimate, using full dataset, no resampling
-#     # i_boot <- 1 # and so on: bootstrap
-#     start <- Sys.time() # record starting time
-#     result <- plr_func(aa_apoe_long_tte_selected, i_boot,  
-#                        formula = model_formulas,
-#                        bootstrap = i_boot != 0)
-#     out <- tibble(i_boot = i_boot, 
-#                   scenario_num = scenario_num) %>%
-#       cbind(., result)
-#     end <- Sys.time() # record ending time
-#     saveRDS(out, paste0(project_folder, "/model_results/plr_bootstrap/",
-#                         paste0(race_varlabel,
-#                                "_RD_RR_time_wide_", i_boot, ".RDS")))
-#     warning_summary <- tibble(
-#       i_boot = i_boot,
-#       race = race_varlabel,
-#       model = model_formulas, 
-#       scenario = scenario_num,
-#       duration = difftime(end, start, units = 'mins'),
-#       # 3 rows but it actually was within one run
-#       w_glm_1 = sum(w_glm_1), 
-#       w_glm_2 = sum(w_glm_2),
-#       w_glm_3 = sum(w_glm_3))
-#     
-#     saveRDS(warning_summary,
-#             paste0(project_folder, "/model_results/warnings/",
-#                    paste0(race_varlabel,"_warning_", i_boot, ".RDS")))
-#   }
-#   
