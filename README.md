@@ -2,7 +2,7 @@
 
 This repo contains all the code necessary (folder scripts) to replicate data construction and analyses in the paper: 
 
-Association of APOE-ε4 genotype and risk of dementia over 10 years in a cohort of Asian American and non-Latino White older adults in California
+Wu Y, Rojas-Saunero LP, Zhou Y, Hayes-Larson E, Fong JO, Mobley T, Brenowitz WD, Hoffmann TJ, Deters KD, Whitmer RA, Gilsanz P, Gee GC, Brookmeyer R, Mayeda ER. APOE-ε4 carriership and dementia risk over 10 years among Asian American and White older adults. Alzheimers Dement. 2026 Jul;22(7):e71615. doi: [10.1002/alz.71615](https://alz-journals.onlinelibrary.wiley.com/doi/10.1002/alz.71615). PMID: 42427166.
 
 ## Scripts description
 *R scripts for data construction, statistical analysis, cluster submission, and generating tables and figures were in the `scripts` folder. The R scripts are named in the order they should be run. Functions created by the authors were sourced where needed.*
